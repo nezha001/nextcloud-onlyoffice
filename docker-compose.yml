@@ -53,7 +53,7 @@ services:
     ports:
        - '2280:80'
     tty: true
-    tdin_open: true
+    stdin_open: falus
     networks:
        - nextcloud  
 networks:
