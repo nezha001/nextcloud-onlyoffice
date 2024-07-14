@@ -10,26 +10,9 @@ services:
       - '80'
       - '9000'
     networks:
-      - onlyoffice
+      - nextcloud
     volumes:
       - app_data:/var/www/html
-  onlyoffice:
-    container_name: onlyoffice
-    image: onlyoffice/documentserver:latest
-    stdin_open: true
-    tty: true
-    restart: always
-    networks:
-      - onlyoffice
-    expose:
-      - '80'
-      - '443'
-    volumes:
-      - document_data:/var/www/onlyoffice/Data
-      - document_log:/var/log/onlyoffice
-    ports:
-      - 2280:80    #此处：左侧是暴漏onlyoffice到公网，除了可以给nextcloud使用，也可以让其他应用调用
-      - 4423:443    #此处是onlyoffice的ssl端口
   nginx:
     container_name: nginx-server
     image: nginx
@@ -40,7 +23,7 @@ services:
       - 2380:80      #此处：左侧的端口是nextcloud暴漏公网的地址
       - 4433:443
     networks:
-      - onlyoffice
+      - nextcloud
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf     #这是nginx的配置文件可以自定义修改
       - app_data:/var/www/html
@@ -56,12 +39,26 @@ services:
       - MYSQL_DATABASE=nextcloud              #数据库名可自定义
       - MYSQL_USER=nextcloud                  #数据库用户名
     networks:
-      - onlyoffice
-networks:
+      - nextcloud
   onlyoffice:
+    image: onlyoffice/documentserver
+    environment:
+      - JWT_SECRET=asdqwezxc123    #这是onlyoffice的秘钥
+    volumes:
+       - './onlyoffice/DocumentServer/db:/var/lib/postgresql'
+       - './onlyoffice/DocumentServer/lib:/var/lib/onlyoffice'
+       - './onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data'
+       - './onlyoffice/DocumentServer/logs:/var/log/onlyoffice'
+    restart: always
+    ports:
+       - '2280:80'
+    tty: true
+    tdin_open: true
+    networks:
+       - nextcloud  
+networks:
+   nextcloud:
     driver: 'bridge'
 volumes:
-  document_data:
-  document_log:
   app_data:
   mysql_data:
