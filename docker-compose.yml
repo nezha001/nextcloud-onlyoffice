@@ -1,0 +1,67 @@
+version: '3.9'
+services:
+  app:
+    container_name: app-server
+    image: nextcloud:fpm
+    stdin_open: true
+    tty: true
+    restart: always
+    expose:
+      - '80'
+      - '9000'
+    networks:
+      - onlyoffice
+    volumes:
+      - app_data:/var/www/html
+  onlyoffice:
+    container_name: onlyoffice
+    image: onlyoffice/documentserver:latest
+    stdin_open: true
+    tty: true
+    restart: always
+    networks:
+      - onlyoffice
+    expose:
+      - '80'
+      - '443'
+    volumes:
+      - document_data:/var/www/onlyoffice/Data
+      - document_log:/var/log/onlyoffice
+    ports:
+      - 2280:80    #此处：左侧是暴漏onlyoffice到公网，除了可以给nextcloud使用，也可以让其他应用调用
+      - 4423:443    #此处是onlyoffice的ssl端口
+  nginx:
+    container_name: nginx-server
+    image: nginx
+    stdin_open: true
+    tty: true
+    restart: always
+    ports:
+      - 2380:80      #此处：左侧的端口是nextcloud暴漏公网的地址
+      - 4433:443
+    networks:
+      - onlyoffice
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf     #这是nginx的配置文件可以自定义修改
+      - app_data:/var/www/html
+  db:
+    container_name: mariadb
+    image: mariadb
+    restart: always
+    volumes:
+      - mysql_data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=Mysql123          #这是mariadb的root密码
+      - MYSQL_PASSWORD=Msql123                #这是ariadb的用户密码
+      - MYSQL_DATABASE=nextcloud              #数据库名可自定义
+      - MYSQL_USER=nextcloud                  #数据库用户名
+    networks:
+      - onlyoffice
+networks:
+  onlyoffice:
+    driver: 'bridge'
+volumes:
+  document_data:
+  document_log:
+  app_data:
+  mysql_data:
